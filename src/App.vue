@@ -1,26 +1,29 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <router-view></router-view>
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld.vue'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'App',
-  components: {
-    HelloWorld
+const router = useRouter()
+const currentRole = ref('admin') // Default to admin for now
+
+onMounted(() => {
+  // Redirect to admin dashboard on initial load
+  router.push('/admin/dashboard')
+})
+
+const switchRole = (role: string) => {
+  currentRole.value = role
+  if (role === 'admin') {
+    router.push('/admin/dashboard')
+  } else {
+    router.push('/crew/dashboard')
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+@import './assets/main.css';
 </style>
