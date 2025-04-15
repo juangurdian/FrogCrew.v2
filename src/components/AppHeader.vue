@@ -7,8 +7,8 @@
         </div>
         
         <div class="flex items-center space-x-4">
-          <!-- Role Switcher -->
-          <div class="flex bg-gray-100 p-1 rounded-lg">
+          <!-- Role Switcher (only show if user is admin) -->
+          <div v-if="userIsAdmin" class="flex bg-gray-100 p-1 rounded-lg">
             <button
               @click="switchToCrewMode"
               :class="[
@@ -30,13 +30,19 @@
           </div>
 
           <!-- User Menu -->
-          <div class="flex items-center">
-            <span class="text-sm text-gray-700 mr-2">{{ user?.name || 'User' }}</span>
+          <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-700">{{ userName }}</span>
             <img
-              :src="user?.avatar || 'https://via.placeholder.com/32'"
+              :src="userAvatar"
               alt="User avatar"
               class="h-8 w-8 rounded-full"
             />
+            <button 
+              @click="logout" 
+              class="px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </div>
@@ -53,6 +59,12 @@ const store = useStore()
 const router = useRouter()
 
 const user = computed(() => store.getters.currentUser)
+const userIsAdmin = computed(() => store.getters.userRole === 'ADMIN')
+const userName = computed(() => {
+  if (!user.value) return 'User'
+  return `${user.value.firstName} ${user.value.lastName}`
+})
+const userAvatar = computed(() => 'https://via.placeholder.com/32')
 const isAdminMode = computed(() => store.getters.isAdminMode)
 const isCrewMode = computed(() => store.getters.isCrewMode)
 
@@ -64,6 +76,10 @@ const switchToAdminMode = async () => {
 const switchToCrewMode = async () => {
   await store.dispatch('switchMode', 'crew')
   router.push('/crew/dashboard')
+}
+
+const logout = () => {
+  store.dispatch('logout')
 }
 </script>
 

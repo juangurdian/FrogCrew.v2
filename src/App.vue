@@ -3,23 +3,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { userService } from '@/services/api'
 
 const router = useRouter()
-const currentRole = ref('admin') // Default to admin for now
+const store = useStore()
 
-onMounted(() => {
-  // Redirect to admin dashboard on initial load
-  router.push('/admin/dashboard')
+onMounted(async () => {
+  // Check if user is authenticated
+  if (store.getters.isAuthenticated) {
+    try {
+      // Fetch current user data if needed
+      const response = await userService.getCurrentUser()
+      store.commit('setUser', response.data)
+      
+      // Redirect based on user role
+      redirectBasedOnRole()
+    } catch (error) {
+      // If error fetching user, log out
+      store.dispatch('logout')
+      router.push('/login')
+    }
+  } else {
+    // If not authenticated, redirect to login
+    if (router.currentRoute.value.path !== '/login') {
+      router.push('/login')
+    }
+  }
 })
 
-const switchRole = (role: string) => {
-  currentRole.value = role
-  if (role === 'admin') {
-    router.push('/admin/dashboard')
+// Watch for authentication changes
+watch(() => store.getters.isAuthenticated, (isAuthenticated) => {
+  if (!isAuthenticated && router.currentRoute.value.path !== '/login') {
+    router.push('/login')
+  }
+})
+
+// Redirect based on user role
+const redirectBasedOnRole = () => {
+  const userRole = store.getters.userRole
+  
+  if (userRole === 'ADMIN') {
+    store.dispatch('switchMode', 'admin')
+    
+    if (!router.currentRoute.value.path.startsWith('/admin')) {
+      router.push('/admin/dashboard')
+    }
   } else {
-    router.push('/crew/dashboard')
+    store.dispatch('switchMode', 'crew')
+    
+    if (!router.currentRoute.value.path.startsWith('/crew')) {
+      router.push('/crew/dashboard')
+    }
   }
 }
 </script>

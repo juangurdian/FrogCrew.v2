@@ -6,6 +6,9 @@
           Sign in to your account
         </h2>
       </div>
+      <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <span class="block sm:inline">{{ error }}</span>
+      </div>
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
@@ -35,10 +38,16 @@
         <div>
           <button
             type="submit"
+            :disabled="loading"
             class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
-            Sign in
+            <span v-if="loading">Logging in...</span>
+            <span v-else>Sign in</span>
           </button>
+        </div>
+        <div class="text-center mt-4">
+          <span class="text-sm">Don't have an account?</span>
+          <button @click="goToRegister" type="button" class="text-sm text-primary font-medium ml-1">Register</button>
         </div>
       </form>
     </div>
@@ -46,21 +55,36 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
+import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
 
 defineOptions({
   name: 'LoginView'
 })
 
+const store = useStore()
 const router = useRouter()
 const form = reactive({
   email: '',
   password: ''
 })
+const loading = ref(false)
+const error = ref('')
 
-const handleSubmit = () => {
-  // TODO: Implement login logic
-  router.push('/crew/dashboard')
+const handleSubmit = async () => {
+  try {
+    loading.value = true
+    error.value = ''
+    await store.dispatch('login', form)
+  } catch (err: any) {
+    error.value = err.response?.data || 'Authentication failed. Please check your credentials.'
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToRegister = () => {
+  router.push('/register')
 }
 </script> 

@@ -1,11 +1,14 @@
 const { defineConfig } = require('@vue/cli-service')
-const DefineOptions = require('unplugin-vue-define-options/webpack')
 
 module.exports = defineConfig({
   transpileDependencies: true,
-  configureWebpack: {
-    plugins: [
-      DefineOptions()
-    ]
+  devServer: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      }
+    }
   }
 })

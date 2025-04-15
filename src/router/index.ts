@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import store from '@/store'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -9,12 +10,27 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('../views/Login.vue'),
+    meta: {
+      public: true
+    }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/Register.vue'),
+    meta: {
+      public: true
+    }
   },
   // Admin routes
   {
     path: '/admin',
     component: () => import('../layouts/AdminLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true
+    },
     children: [
       {
         path: '',
@@ -81,6 +97,10 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/crew',
     component: () => import('../layouts/CrewLayout.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresCrew: true
+    },
     children: [
       {
         path: '',
@@ -122,12 +142,66 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import('../views/crew/Settings.vue')
       }
     ]
+  },
+  // Catch all route - redirect to login or dashboard based on auth
+  {
+    path: '/:catchAll(.*)',
+    redirect: to => {
+      return store.getters.isAuthenticated 
+        ? (store.getters.isAdminMode ? '/admin/dashboard' : '/crew/dashboard')
+        : '/login'
+    }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
   routes
+})
+
+// Navigation Guards
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = store.getters.isAuthenticated
+  const isAdmin = store.getters.userRole === 'ADMIN'
+  
+  // Public routes are accessible to anyone
+  if (to.matched.some(record => record.meta.public)) {
+    // If already logged in and trying to access login page, redirect to dashboard
+    if (isAuthenticated && to.path === '/login') {
+      return next(isAdmin ? '/admin/dashboard' : '/crew/dashboard')
+    }
+    return next()
+  }
+  
+  // Check if route requires authentication
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!isAuthenticated) {
+      // Not authenticated, redirect to login
+      return next('/login')
+    }
+    
+    // Check if route requires admin role
+    if (to.matched.some(record => record.meta.requiresAdmin)) {
+      if (!isAdmin) {
+        // Not admin, redirect to crew dashboard
+        return next('/crew/dashboard')
+      }
+    }
+    
+    // Check if route requires crew role
+    if (to.matched.some(record => record.meta.requiresCrew)) {
+      if (isAdmin && !to.path.startsWith('/admin')) {
+        // Admin trying to access crew routes, redirect to admin dashboard
+        return next('/admin/dashboard')
+      }
+    }
+    
+    // All checks passed, proceed
+    return next()
+  }
+  
+  // Default - should not reach here
+  next()
 })
 
 export default router 
