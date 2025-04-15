@@ -1,84 +1,70 @@
 <template>
-  <header class="bg-white shadow-sm h-16 fixed top-0 right-0 left-64 z-10">
-    <div class="flex items-center justify-between h-full px-6">
-      <div class="flex items-center space-x-4">
-        <button class="p-2 rounded-full hover:bg-gray-100">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="flex items-center space-x-4">
-        <button class="relative p-2 rounded-full hover:bg-gray-100">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-          </svg>
-          <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
-        
-        <div class="flex items-center space-x-2">
-          <img :src="userAvatar" alt="User Avatar" class="w-8 h-8 rounded-full">
-          <div class="text-sm">
-            <p class="font-medium">{{ userName }}</p>
-            <p class="text-gray-500">{{ userRole }}</p>
-          </div>
+  <header class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center">
+          <h1 class="text-xl font-semibold text-gray-900">FrogCrew</h1>
         </div>
+        
+        <div class="flex items-center space-x-4">
+          <!-- Role Switcher -->
+          <div class="flex bg-gray-100 p-1 rounded-lg">
+            <button
+              @click="switchToCrewMode"
+              :class="[
+                'px-3 py-1.5 text-sm font-medium rounded-md',
+                isCrewMode ? 'bg-white shadow text-gray-800' : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Crew Mode
+            </button>
+            <button
+              @click="switchToAdminMode"
+              :class="[
+                'px-3 py-1.5 text-sm font-medium rounded-md',
+                isAdminMode ? 'bg-white shadow text-gray-800' : 'text-gray-600 hover:text-gray-800'
+              ]"
+            >
+              Admin Mode
+            </button>
+          </div>
 
-        <!-- Mode Switcher -->
-        <div class="mode-switcher">
-          <button 
-            @click="switchToAdmin" 
-            :class="{ active: isAdminMode }"
-            class="mode-btn admin-btn"
-          >
-            Admin Mode
-          </button>
-          <button 
-            @click="switchToCrew" 
-            :class="{ active: isCrewMode }"
-            class="mode-btn crew-btn"
-          >
-            Crew Mode
-          </button>
+          <!-- User Menu -->
+          <div class="flex items-center">
+            <span class="text-sm text-gray-700 mr-2">{{ user?.name || 'User' }}</span>
+            <img
+              :src="user?.avatar || 'https://via.placeholder.com/32'"
+              alt="User avatar"
+              class="h-8 w-8 rounded-full"
+            />
+          </div>
         </div>
       </div>
     </div>
   </header>
 </template>
 
-<script>
-import { mapGetters, mapActions } from 'vuex';
-import { useRouter } from 'vue-router';
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useStore } from 'vuex'
+import { useRouter } from 'vue-router'
 
-export default {
-  name: 'AppHeader',
-  setup() {
-    const router = useRouter();
-    return { router };
-  },
-  data() {
-    return {
-      userName: 'John Doe',
-      userRole: 'Admin',
-      userAvatar: 'https://ui-avatars.com/api/?name=John+Doe&background=4d2e7d&color=fff'
-    };
-  },
-  computed: {
-    ...mapGetters(['isAdminMode', 'isCrewMode'])
-  },
-  methods: {
-    ...mapActions(['switchMode']),
-    switchToAdmin() {
-      this.switchMode('admin');
-      this.router.push('/admin');
-    },
-    switchToCrew() {
-      this.switchMode('crew');
-      this.router.push('/crew');
-    }
-  }
-};
+const store = useStore()
+const router = useRouter()
+
+const user = computed(() => store.getters.currentUser)
+const isAdminMode = computed(() => store.getters.isAdminMode)
+const isCrewMode = computed(() => store.getters.isCrewMode)
+
+const switchToAdminMode = async () => {
+  await store.dispatch('switchMode', 'admin')
+  router.push('/admin/dashboard')
+}
+
+const switchToCrewMode = async () => {
+  await store.dispatch('switchMode', 'crew')
+  router.push('/crew/dashboard')
+}
 </script>
 
 <style scoped>

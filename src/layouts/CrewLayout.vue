@@ -99,7 +99,7 @@
       <AppHeader />
       <!-- Main Content -->
       <main class="p-4 overflow-auto">
-        <slot></slot>
+        <router-view></router-view>
       </main>
     </div>
   </div>
