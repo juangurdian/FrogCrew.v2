@@ -6,29 +6,7 @@
           <h1 class="text-xl font-semibold text-gray-900">FrogCrew</h1>
         </div>
         
-        <div class="flex items-center space-x-4">
-          <!-- Role Switcher (only show if user is admin) -->
-          <div v-if="userIsAdmin" class="flex bg-gray-100 p-1 rounded-lg">
-            <button
-              @click="switchToCrewMode"
-              :class="[
-                'px-3 py-1.5 text-sm font-medium rounded-md',
-                isCrewMode ? 'bg-white shadow text-gray-800' : 'text-gray-600 hover:text-gray-800'
-              ]"
-            >
-              Crew Mode
-            </button>
-            <button
-              @click="switchToAdminMode"
-              :class="[
-                'px-3 py-1.5 text-sm font-medium rounded-md',
-                isAdminMode ? 'bg-white shadow text-gray-800' : 'text-gray-600 hover:text-gray-800'
-              ]"
-            >
-              Admin Mode
-            </button>
-          </div>
-
+        <div class="flex items-center">
           <!-- User Menu -->
           <div class="flex items-center space-x-3">
             <span class="text-sm text-gray-700">{{ userName }}</span>
@@ -59,24 +37,11 @@ const store = useStore()
 const router = useRouter()
 
 const user = computed(() => store.getters.currentUser)
-const userIsAdmin = computed(() => store.getters.userRole === 'ADMIN')
 const userName = computed(() => {
   if (!user.value) return 'User'
   return `${user.value.firstName} ${user.value.lastName}`
 })
 const userAvatar = computed(() => 'https://via.placeholder.com/32')
-const isAdminMode = computed(() => store.getters.isAdminMode)
-const isCrewMode = computed(() => store.getters.isCrewMode)
-
-const switchToAdminMode = async () => {
-  await store.dispatch('switchMode', 'admin')
-  router.push('/admin/dashboard')
-}
-
-const switchToCrewMode = async () => {
-  await store.dispatch('switchMode', 'crew')
-  router.push('/crew/dashboard')
-}
 
 const logout = () => {
   store.dispatch('logout')

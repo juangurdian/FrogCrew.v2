@@ -15,7 +15,7 @@
     <!-- Dashboard content -->
     <div v-else>
       <!-- Summary Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Crew Members -->
         <div class="bg-white rounded-lg shadow-sm p-4">
           <div class="flex items-center">
@@ -78,7 +78,7 @@
       </div>
 
       <!-- Calendar and Crew Status -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <!-- Mini Calendar -->
         <div class="bg-white rounded-lg shadow-sm">
           <div class="p-4">
@@ -145,7 +145,7 @@
       </div>
 
       <!-- Recent Activity and Upcoming Shifts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <!-- Recent Activity -->
         <div class="bg-white rounded-lg shadow-sm">
           <div class="p-4">
@@ -233,9 +233,10 @@ const loadDashboardData = async () => {
   try {
     console.log('Fetching dashboard data...');
     const response = await dashboardService.getDashboard();
-    const data = response.data;
+    console.log('Dashboard API response:', response);
     
-    console.log('Dashboard data received:', data);
+    const data = response.data;
+    console.log('Dashboard data:', data);
     
     // Update state with received data
     summary.value = data.summary || {};
@@ -247,7 +248,22 @@ const loadDashboardData = async () => {
     
   } catch (err: any) {
     console.error('Error loading dashboard data:', err);
-    error.value = err.response?.data?.message || 'Failed to load dashboard data. Check your connection and permissions.';
+    console.error('Error response:', err.response);
+    console.error('Error status:', err.response?.status);
+    console.error('Error data:', err.response?.data);
+    
+    let errorMessage = 'Failed to load dashboard data. ';
+    if (err.response?.status === 401) {
+      errorMessage += 'Your session has expired. Please log in again.';
+    } else if (err.response?.status === 403) {
+      errorMessage += 'You do not have permission to view this data.';
+    } else if (err.response?.data?.message) {
+      errorMessage += err.response.data.message;
+    } else {
+      errorMessage += 'Check your connection and permissions.';
+    }
+    
+    error.value = errorMessage;
   } finally {
     loading.value = false;
   }

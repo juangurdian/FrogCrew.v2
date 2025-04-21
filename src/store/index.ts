@@ -47,26 +47,34 @@ export default createStore<State>({
     setUser(state, user) {
       state.user = user
       if (user) {
+        // Automatically set mode based on role
+        state.currentMode = user.role === 'ADMIN' ? 'admin' : 'crew'
+        localStorage.setItem('currentMode', state.currentMode)
         localStorage.setItem('user', JSON.stringify(user))
       } else {
         localStorage.removeItem('user')
+        localStorage.removeItem('currentMode')
       }
     },
     setMode(state, mode) {
-      state.currentMode = mode
-      localStorage.setItem('currentMode', mode)
+      // Only allow changing mode if user is admin
+      if (state.user?.role === 'ADMIN') {
+        state.currentMode = mode
+        localStorage.setItem('currentMode', mode)
+      }
     },
     logout(state) {
       state.token = null
       state.user = null
       state.isAuthenticated = false
+      state.currentMode = 'crew'
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       localStorage.removeItem('currentMode')
     }
   },
   actions: {
-    async login({ commit, dispatch }, credentials) {
+    async login({ commit }, credentials) {
       try {
         const response = await authService.login(credentials)
         const { token, user } = response.data
@@ -78,10 +86,9 @@ export default createStore<State>({
         commit('setToken', token)
         commit('setUser', user)
         
-        // Set mode based on user role
-        const mode = user.role === 'ADMIN' ? 'admin' : 'crew'
-        dispatch('switchMode', mode)
-        router.push(`/${mode}/dashboard`)
+        // Navigate based on user role
+        const route = user.role === 'ADMIN' ? '/admin/dashboard' : '/crew/dashboard'
+        router.push(route)
         
         return response
       } catch (error) {
