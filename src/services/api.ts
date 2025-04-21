@@ -2,7 +2,7 @@ import axios from 'axios';
 import store from '@/store';
 
 // With proxy config, we can use relative URLs
-const API_URL = '/api';
+const API_URL = '';
 
 // Create axios instance
 const api = axios.create({
@@ -59,10 +59,10 @@ interface UserData {
 // Auth services
 export const authService = {
   login(credentials: Credentials) {
-    return api.post('/auth/login', credentials);
+    return api.post('/api/auth/login', credentials);
   },
   register(user: UserData) {
-    return api.post('/auth/register', user);
+    return api.post('/api/auth/register', user);
   },
 };
 

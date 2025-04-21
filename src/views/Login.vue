@@ -78,7 +78,16 @@ const handleSubmit = async () => {
     error.value = ''
     await store.dispatch('login', form)
   } catch (err: any) {
-    error.value = err.response?.data || 'Authentication failed. Please check your credentials.'
+    console.error('Login error details:', err)
+    if (err.response?.status === 401) {
+      error.value = 'Invalid email or password.'
+    } else if (err.message === 'Invalid response from server') {
+      error.value = 'Server response was incomplete. Please try again.'
+    } else if (err.response?.data) {
+      error.value = err.response.data
+    } else {
+      error.value = 'An error occurred during login. Please try again.'
+    }
   } finally {
     loading.value = false
   }

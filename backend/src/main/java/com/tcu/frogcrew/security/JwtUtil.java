@@ -1,9 +1,11 @@
 package com.tcu.frogcrew.security;
 
+import com.tcu.frogcrew.config.JwtConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -12,15 +14,19 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
-    private static final long JWT_EXPIRATION = 86400000; // 24 hours
+    private final JwtConfig jwtConfig;
+
+    public JwtUtil(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+    }
 
     private Key getSigningKey() {
-        byte[] keyBytes = SECRET_KEY.getBytes();
+        byte[] keyBytes = jwtConfig.getSecret().getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -51,15 +57,26 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        return createToken(claims, userDetails.getUsername(), jwtConfig.getExpiration());
     }
 
-    private String createToken(Map<String, Object> claims, String subject) {
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
+        return createToken(claims, userDetails.getUsername(), jwtConfig.getRefreshExpiration());
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, long expiration) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

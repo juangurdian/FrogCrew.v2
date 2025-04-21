@@ -17,10 +17,20 @@ interface State {
   currentMode: string;
 }
 
+// Helper function to safely parse JSON
+const safeJSONParse = (str: string | null): any => {
+  if (!str) return null;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default createStore<State>({
   state: {
     token: localStorage.getItem('token') || null,
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
+    user: safeJSONParse(localStorage.getItem('user')),
     isAuthenticated: !!localStorage.getItem('token'),
     currentMode: localStorage.getItem('currentMode') || 'crew'
   },
@@ -28,11 +38,19 @@ export default createStore<State>({
     setToken(state, token) {
       state.token = token
       state.isAuthenticated = !!token
-      localStorage.setItem('token', token)
+      if (token) {
+        localStorage.setItem('token', token)
+      } else {
+        localStorage.removeItem('token')
+      }
     },
     setUser(state, user) {
       state.user = user
-      localStorage.setItem('user', JSON.stringify(user))
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user))
+      } else {
+        localStorage.removeItem('user')
+      }
     },
     setMode(state, mode) {
       state.currentMode = mode
@@ -44,6 +62,7 @@ export default createStore<State>({
       state.isAuthenticated = false
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      localStorage.removeItem('currentMode')
     }
   },
   actions: {
@@ -51,17 +70,18 @@ export default createStore<State>({
       try {
         const response = await authService.login(credentials)
         const { token, user } = response.data
+        
+        if (!token || !user) {
+          throw new Error('Invalid response from server')
+        }
+
         commit('setToken', token)
         commit('setUser', user)
         
         // Set mode based on user role
-        if (user.role === 'ADMIN') {
-          dispatch('switchMode', 'admin')
-          router.push('/admin/dashboard')
-        } else {
-          dispatch('switchMode', 'crew')
-          router.push('/crew/dashboard')
-        }
+        const mode = user.role === 'ADMIN' ? 'admin' : 'crew'
+        dispatch('switchMode', mode)
+        router.push(`/${mode}/dashboard`)
         
         return response
       } catch (error) {

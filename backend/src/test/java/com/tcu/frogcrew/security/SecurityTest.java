@@ -2,7 +2,7 @@ package com.tcu.frogcrew.security;
 
 import com.tcu.frogcrew.model.User;
 import com.tcu.frogcrew.model.UserRole;
-import com.tcu.frogcrew.repository.UserRepository;
+import com.tcu.frogcrew.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +26,27 @@ public class SecurityTest {
     private UserRepository userRepository;
 
     @Autowired
+    private ActivityRepository activityRepository;
+
+    @Autowired
+    private UserPositionRepository userPositionRepository;
+
+    @Autowired
+    private ShiftAssignmentRepository shiftAssignmentRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     public void setup() {
+        // Clear all related tables first (due to foreign key constraints)
+        shiftAssignmentRepository.deleteAll();
+        activityRepository.deleteAll();
+        userPositionRepository.deleteAll();
+        
+        // Clear all users
+        userRepository.deleteAll();
+        
         // Create a test user
         User user = new User();
         user.setEmail("test@example.com");
