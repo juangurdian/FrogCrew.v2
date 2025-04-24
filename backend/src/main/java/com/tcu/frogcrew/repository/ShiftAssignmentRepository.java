@@ -1,5 +1,7 @@
 package com.tcu.frogcrew.repository;
 
+import com.tcu.frogcrew.model.AssignmentStatus;
+import com.tcu.frogcrew.model.Shift;
 import com.tcu.frogcrew.model.ShiftAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,9 +16,11 @@ public interface ShiftAssignmentRepository extends JpaRepository<ShiftAssignment
     
     List<ShiftAssignment> findByUserIdOrderByShiftStartTimeDesc(Long userId);
     
-    @Query("SELECT sa FROM ShiftAssignment sa WHERE sa.status = 'PENDING' ORDER BY sa.createdAt DESC")
+    @Query("SELECT sa FROM ShiftAssignment sa WHERE sa.status = com.tcu.frogcrew.model.AssignmentStatus.PENDING ORDER BY sa.createdAt DESC")
     List<ShiftAssignment> findPendingAssignments();
     
-    @Query("SELECT COUNT(sa) FROM ShiftAssignment sa WHERE sa.status = 'PENDING'")
+    @Query("SELECT COUNT(sa) FROM ShiftAssignment sa WHERE sa.status = com.tcu.frogcrew.model.AssignmentStatus.PENDING")
     int countPendingAssignments();
+    
+    int countByShiftAndStatus(Shift shift, AssignmentStatus status);
 } 

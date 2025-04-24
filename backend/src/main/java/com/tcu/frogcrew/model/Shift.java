@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -42,6 +43,17 @@ public class Shift {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @ManyToMany
+    @JoinTable(
+        name = "shift_required_positions",
+        joinColumns = @JoinColumn(name = "shift_id"),
+        inverseJoinColumns = @JoinColumn(name = "position_id")
+    )
+    private Set<Position> requiredPositions;
+    
+    @OneToMany(mappedBy = "shift")
+    private Set<ShiftAssignment> assignments;
     
     @PrePersist
     protected void onCreate() {

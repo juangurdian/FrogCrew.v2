@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,16 +38,16 @@ public class DashboardService {
         Map<String, Object> summary = new HashMap<>();
         
         // Total number of crew members (excluding admins)
-        long totalCrewMembers = userRepository.count();
+        long totalCrewMembers = userRepository.countByRole(UserRole.USER);
         
-        // Number of upcoming shifts
-        int upcomingShifts = shiftRepository.countUpcomingShifts();
+        // Number of upcoming shifts in the next 7 days
+        int upcomingShifts = shiftRepository.countUpcomingWeekShifts();
         
         // Number of pending requests
         int pendingRequests = shiftAssignmentRepository.countPendingAssignments();
         
-        // Number of available crew (simplified for demo)
-        int availableCrew = (int) (totalCrewMembers * 0.75); // Assuming 75% of crew is available
+        // Number of available crew (based on availability records)
+        int availableCrew = userRepository.countAvailableUsers();
         
         summary.put("totalCrewMembers", totalCrewMembers);
         summary.put("upcomingShifts", upcomingShifts);
@@ -57,9 +58,26 @@ public class DashboardService {
     }
     
     public List<Map<String, Object>> getUpcomingShifts() {
-        return shiftRepository.findUpcomingShifts().stream()
+        LocalDateTime now = LocalDateTime.now();
+        return shiftRepository.findUpcomingShifts(now).stream()
                 .limit(5)
-                .map(this::convertShiftToMap)
+                .map(shift -> {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("id", shift.getId());
+                    result.put("title", shift.getTitle());
+                    result.put("date", shift.getStartTime().toLocalDate().toString());
+                    result.put("time", formatShiftTime(shift));
+                    
+                    // Calculate actual staffing status
+                    int requiredStaff = shift.getRequiredPositions().size();
+                    int assignedStaff = shiftAssignmentRepository.countByShiftAndStatus(shift, AssignmentStatus.CONFIRMED);
+                    boolean isFullyStaffed = assignedStaff >= requiredStaff;
+                    
+                    result.put("status", isFullyStaffed ? "Fully Staffed" : String.format("Needs %d More", requiredStaff - assignedStaff));
+                    result.put("statusClass", isFullyStaffed ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800");
+                    
+                    return result;
+                })
                 .collect(Collectors.toList());
     }
     
@@ -90,7 +108,8 @@ public class DashboardService {
     }
     
     public List<Map<String, Object>> getShiftCoverage() {
-        return shiftRepository.findUpcomingShifts().stream()
+        LocalDateTime now = LocalDateTime.now();
+        return shiftRepository.findUpcomingShifts(now).stream()
                 .limit(4)
                 .map(shift -> {
                     Map<String, Object> result = new HashMap<>();
@@ -98,10 +117,13 @@ public class DashboardService {
                     result.put("title", shift.getTitle());
                     result.put("time", formatShiftTime(shift));
                     
-                    int coverage = shift.getCoveragePercentage();
+                    // Calculate actual coverage percentage
+                    int requiredStaff = shift.getRequiredPositions().size();
+                    int assignedStaff = shiftAssignmentRepository.countByShiftAndStatus(shift, AssignmentStatus.CONFIRMED);
+                    int coverage = requiredStaff > 0 ? (assignedStaff * 100) / requiredStaff : 0;
+                    
                     result.put("coverage", coverage);
                     
-                    // Determine coverage class based on percentage
                     String coverageClass;
                     if (coverage >= 90) {
                         coverageClass = "bg-green-500";
@@ -118,40 +140,33 @@ public class DashboardService {
     }
     
     public List<CalendarDay> getCalendarDays() {
-        // This is a simplified implementation
-        List<CalendarDay> days = new java.util.ArrayList<>();
+        List<CalendarDay> days = new ArrayList<>();
         LocalDateTime today = LocalDateTime.now();
         int daysInMonth = today.getMonth().length(today.toLocalDate().isLeapYear());
+        int firstDayOfMonth = today.withDayOfMonth(1).getDayOfWeek().getValue();
         
-        for (int i = 1; i <= 35; i++) {
-            boolean isInRange = i <= daysInMonth;
+        // Add empty days for the start of the month
+        for (int i = 1; i < firstDayOfMonth; i++) {
+            days.add(new CalendarDay(0, false, false));
+        }
+        
+        // Add actual days
+        for (int i = 1; i <= daysInMonth; i++) {
+            LocalDateTime date = today.withDayOfMonth(i).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime endDate = date.plusDays(1);
+            List<Shift> shiftsOnDay = shiftRepository.findShiftsByDate(date, endDate);
+            boolean hasShifts = !shiftsOnDay.isEmpty();
             boolean isToday = i == today.getDayOfMonth();
             
-            // Randomly assign shifts to some days for demo purposes
-            boolean hasShifts = isInRange && (i % 5 == 0 || i % 7 == 0);
-            
-            days.add(new CalendarDay(
-                isInRange ? i : 0,
-                isToday,
-                hasShifts
-            ));
+            days.add(new CalendarDay(i, isToday, hasShifts));
+        }
+        
+        // Fill remaining days to complete the grid
+        while (days.size() < 35) {
+            days.add(new CalendarDay(0, false, false));
         }
         
         return days;
-    }
-    
-    private Map<String, Object> convertShiftToMap(Shift shift) {
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", shift.getId());
-        result.put("title", shift.getTitle());
-        result.put("date", shift.getStartTime().toLocalDate().toString());
-        result.put("time", formatShiftTime(shift));
-        
-        boolean isFullyStaffed = shift.isFullyStaffed();
-        result.put("status", isFullyStaffed ? "Fully Staffed" : "Needs Staff");
-        result.put("statusClass", isFullyStaffed ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800");
-        
-        return result;
     }
     
     private String formatShiftTime(Shift shift) {
@@ -201,10 +216,12 @@ public class DashboardService {
         
         if (minutes < 60) {
             return minutes + " minutes ago";
-        } else if (minutes < 24 * 60) {
-            return (minutes / 60) + " hours ago";
+        } else if (minutes < 1440) {
+            long hours = minutes / 60;
+            return hours + (hours == 1 ? " hour ago" : " hours ago");
         } else {
-            return (minutes / (24 * 60)) + " days ago";
+            long days = minutes / 1440;
+            return days + (days == 1 ? " day ago" : " days ago");
         }
     }
     

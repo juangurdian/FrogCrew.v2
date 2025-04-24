@@ -1,11 +1,62 @@
--- Clear existing data
+-- Clear non-user data
 DELETE FROM activities;
 DELETE FROM shift_assignments;
 DELETE FROM user_positions;
 DELETE FROM shifts;
 DELETE FROM events;
 DELETE FROM positions;
-DELETE FROM users;
+
+-- Only insert default users if they don't exist
+-- Admin user
+MERGE INTO users KEY (email) 
+VALUES (
+    'admin@frogcrew.com',
+    '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.AQubh4a', -- This is the bcrypt hash for 'admin123'
+    'Admin',
+    'User',
+    'ADMIN',
+    true,
+    CURRENT_TIMESTAMP(),
+    CURRENT_TIMESTAMP()
+);
+
+-- Crew user
+MERGE INTO users KEY (email)
+VALUES (
+    'crew@example.com', 
+    'Crew', 
+    'Member', 
+    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 
+    'USER', 
+    true, 
+    CURRENT_TIMESTAMP, 
+    CURRENT_TIMESTAMP
+);
+
+-- Add more crew members if they don't exist
+MERGE INTO users KEY (email)
+VALUES (
+    'john.doe@example.com', 
+    'John', 
+    'Doe', 
+    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 
+    'USER', 
+    true, 
+    CURRENT_TIMESTAMP, 
+    CURRENT_TIMESTAMP
+);
+
+MERGE INTO users KEY (email)
+VALUES (
+    'jane.smith@example.com', 
+    'Jane', 
+    'Smith', 
+    '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 
+    'USER', 
+    true, 
+    CURRENT_TIMESTAMP, 
+    CURRENT_TIMESTAMP
+);
 
 -- Create positions first
 INSERT INTO positions (name, description, color, created_at, updated_at)
@@ -22,33 +73,6 @@ VALUES ('Audio Engineers', 'Manage sound equipment', 'bg-purple-500', CURRENT_TI
 
 INSERT INTO positions (name, description, color, created_at, updated_at)
 VALUES ('Technical Directors', 'Coordinate technical aspects', 'bg-red-500', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
--- Then create users
--- Password for both users is 'password' (bcrypt encoded)
--- Admin user
-MERGE INTO users (email, password, first_name, last_name, role, is_active, created_at, updated_at)
-KEY (email)
-VALUES (
-    'admin@frogcrew.com',
-    '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.AQubh4a', -- This is the bcrypt hash for 'admin123'
-    'Admin',
-    'User',
-    'ADMIN',
-    true,
-    CURRENT_TIMESTAMP(),
-    CURRENT_TIMESTAMP()
-);
-
--- Crew user
-INSERT INTO users (email, first_name, last_name, password, role, is_active, created_at, updated_at)
-VALUES ('crew@example.com', 'Crew', 'Member', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
--- Add more crew members
-INSERT INTO users (email, first_name, last_name, password, role, is_active, created_at, updated_at)
-VALUES ('john.doe@example.com', 'John', 'Doe', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
-INSERT INTO users (email, first_name, last_name, password, role, is_active, created_at, updated_at)
-VALUES ('jane.smith@example.com', 'Jane', 'Smith', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Now assign positions to users using subqueries
 INSERT INTO user_positions (user_id, position_id, created_at)
