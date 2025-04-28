@@ -1,133 +1,146 @@
 <template>
-  <div class="invite-crew">
-    <div class="header">
-      <h1 class="text-2xl font-semibold text-gray-900">Invite Crew Members</h1>
-      <p class="text-gray-600">Send invitations to new crew members to join the team</p>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Invite Crew</h1>
+
+    <!-- Error Alert -->
+    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+      <span class="block sm:inline">{{ error }}</span>
     </div>
 
-    <div class="invite-form">
-      <div class="form-section">
-        <h2 class="text-lg font-medium text-gray-900">Single Invite</h2>
-        <form @submit.prevent="sendSingleInvite">
-          <div class="form-group">
-            <label class="block text-sm font-medium text-gray-700">Email Address</label>
-            <input 
-              type="email" 
-              v-model="singleInvite.email" 
-              placeholder="crew.member@example.com"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Single Invite Form -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Single Invite</h2>
+        <form @submit.prevent="sendSingleInvite" class="space-y-4">
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              id="email"
+              v-model="singleInvite.email"
               required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              :disabled="loading"
             />
           </div>
-          <div class="form-group">
-            <label class="block text-sm font-medium text-gray-700">Position</label>
-            <select 
-              v-model="singleInvite.position" 
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+          <div>
+            <label for="position" class="block text-sm font-medium text-gray-700">Position</label>
+            <select
+              id="position"
+              v-model="singleInvite.position"
               required
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              :disabled="loading"
             >
-              <option value="">Select Position</option>
-              <option value="camera">Camera Operator</option>
-              <option value="audio">Audio Technician</option>
-              <option value="director">Director</option>
-              <option value="producer">Producer</option>
-              <option value="editor">Video Editor</option>
+              <option value="ADMIN">Administrator</option>
+              <option value="USER">Crew Member</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="block text-sm font-medium text-gray-700">Message (Optional)</label>
-            <textarea 
-              v-model="singleInvite.message" 
-              placeholder="Add a personal message to the invitation"
+          <div>
+            <label for="message" class="block text-sm font-medium text-gray-700">Message (Optional)</label>
+            <textarea
+              id="message"
+              v-model="singleInvite.message"
               rows="3"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              :disabled="loading"
             ></textarea>
           </div>
-          <button type="submit" class="w-full bg-[#4d2e7d] text-white py-2 px-4 rounded-md hover:bg-[#4d2e7d]/90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-            Send Invitation
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            :disabled="loading"
+          >
+            <span v-if="loading">Sending...</span>
+            <span v-else>Send Invite</span>
           </button>
         </form>
       </div>
 
-      <div class="divider">
-        <span class="bg-white px-4 text-gray-500">OR</span>
-      </div>
-
-      <div class="form-section">
-        <h2 class="text-lg font-medium text-gray-900">Bulk Invite</h2>
-        <form @submit.prevent="sendBulkInvite">
-          <div class="form-group">
-            <label class="block text-sm font-medium text-gray-700">Upload CSV File</label>
-            <div class="file-upload mt-1">
-              <input 
-                type="file" 
-                accept=".csv"
-                @change="handleFileUpload"
-                id="csvFileInput"
-                class="hidden"
-              />
-              <button 
-                type="button" 
-                class="bg-gray-100 text-gray-700 py-2 px-4 rounded-md border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+      <!-- Bulk Invite Form -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4">Bulk Invite</h2>
+        <form @submit.prevent="sendBulkInvite" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">CSV File</label>
+            <input
+              type="file"
+              id="csvFileInput"
+              accept=".csv"
+              @change="handleFileUpload"
+              class="hidden"
+              :disabled="loading"
+            />
+            <div class="mt-1 flex items-center">
+              <button
+                type="button"
                 @click="triggerFileInput"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                :disabled="loading"
               >
                 Choose File
               </button>
-              <span v-if="bulkInvite.fileName" class="ml-2 text-sm text-gray-600">{{ bulkInvite.fileName }}</span>
+              <span class="ml-3 text-sm text-gray-500">{{ bulkInvite.fileName || 'No file chosen' }}</span>
             </div>
-            <small class="text-sm text-gray-500 mt-2 block">CSV format: email,position,message</small>
           </div>
-          <button 
-            type="submit" 
-            class="w-full bg-[#4d2e7d] text-white py-2 px-4 rounded-md hover:bg-[#4d2e7d]/90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            :disabled="!bulkInvite.file"
+          <button
+            type="submit"
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+            :disabled="!bulkInvite.file || loading"
           >
-            Send Bulk Invitations
+            <span v-if="loading">Sending...</span>
+            <span v-else>Send Bulk Invites</span>
           </button>
         </form>
       </div>
     </div>
 
-    <div class="recent-invites" v-if="recentInvites.length > 0">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Invitations</h2>
-      <div class="overflow-x-auto">
+    <!-- Recent Invites -->
+    <div class="mt-12">
+      <h2 class="text-xl font-semibold mb-4">Recent Invites</h2>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent Date</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
+            <tr v-if="loading && recentInvites.length === 0">
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Loading...</td>
+            </tr>
+            <tr v-else-if="recentInvites.length === 0">
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">No invites found</td>
+            </tr>
             <tr v-for="invite in recentInvites" :key="invite.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ invite.email }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ invite.position }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="[
-                  'px-2 py-1 text-xs rounded-full',
-                  getStatusClass(invite.status)
-                ]">
+                <span :class="['px-2 inline-flex text-xs leading-5 font-semibold rounded-full', getStatusClass(invite.status)]">
                   {{ invite.status }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatDate(invite.sentDate) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <button 
-                  @click="resendInvite(invite)"
-                  class="text-[#4d2e7d] hover:text-[#4d2e7d]/90 mr-2 disabled:text-gray-400"
-                  :disabled="invite.status === 'pending'"
-                >
-                  Resend
-                </button>
-                <button 
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ formatDate(invite.createdAt) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <button
+                  v-if="invite.status === 'PENDING'"
                   @click="cancelInvite(invite)"
-                  class="text-red-600 hover:text-red-700 disabled:text-gray-400"
-                  :disabled="invite.status !== 'pending'"
+                  class="text-red-600 hover:text-red-900 mr-4"
+                  :disabled="loading"
                 >
                   Cancel
+                </button>
+                <button
+                  v-if="['CANCELLED', 'EXPIRED'].includes(invite.status)"
+                  @click="resendInvite(invite)"
+                  class="text-blue-600 hover:text-blue-900"
+                  :disabled="loading"
+                >
+                  Resend
                 </button>
               </td>
             </tr>
@@ -139,25 +152,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-
-interface SingleInvite {
-  email: string;
-  position: string;
-  message: string;
-}
+import { ref, onMounted } from 'vue';
+import { invitationService, type Invitation, type SingleInvite } from '@/services/invitationService';
 
 interface BulkInvite {
   file: File | null;
   fileName: string;
-}
-
-interface Invite {
-  id: number;
-  email: string;
-  position: string;
-  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
-  sentDate: string;
 }
 
 const singleInvite = ref<SingleInvite>({
@@ -171,22 +171,18 @@ const bulkInvite = ref<BulkInvite>({
   fileName: ''
 });
 
-const recentInvites = ref<Invite[]>([
-  {
-    id: 1,
-    email: 'john.doe@example.com',
-    position: 'Camera Operator',
-    status: 'pending',
-    sentDate: '2024-03-15'
-  },
-  {
-    id: 2,
-    email: 'jane.smith@example.com',
-    position: 'Audio Technician',
-    status: 'accepted',
-    sentDate: '2024-03-14'
+const recentInvites = ref<Invitation[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+
+onMounted(async () => {
+  try {
+    recentInvites.value = await invitationService.getRecentInvitations();
+  } catch (err) {
+    error.value = 'Failed to load recent invitations';
+    console.error(err);
   }
-]);
+});
 
 const triggerFileInput = () => {
   const fileInput = document.getElementById('csvFileInput') as HTMLInputElement;
@@ -195,21 +191,24 @@ const triggerFileInput = () => {
   }
 };
 
-const sendSingleInvite = () => {
-  // TODO: Implement API call to send invitation
-  console.log('Sending single invite:', singleInvite.value);
-  recentInvites.value.unshift({
-    id: Date.now(),
-    email: singleInvite.value.email,
-    position: singleInvite.value.position,
-    status: 'pending',
-    sentDate: new Date().toISOString().split('T')[0]
-  });
-  singleInvite.value = {
-    email: '',
-    position: '',
-    message: ''
-  };
+const sendSingleInvite = async () => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    const invitation = await invitationService.sendSingleInvite(singleInvite.value);
+    recentInvites.value.unshift(invitation);
+    singleInvite.value = {
+      email: '',
+      position: '',
+      message: ''
+    };
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to send invitation';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
 };
 
 const handleFileUpload = (event: Event) => {
@@ -221,40 +220,78 @@ const handleFileUpload = (event: Event) => {
   }
 };
 
-const sendBulkInvite = () => {
-  // TODO: Implement API call to send bulk invitations
-  console.log('Sending bulk invites:', bulkInvite.value);
-  bulkInvite.value = {
-    file: null,
-    fileName: ''
-  };
-  const fileInput = document.getElementById('csvFileInput') as HTMLInputElement;
-  if (fileInput) {
-    fileInput.value = '';
+const sendBulkInvite = async () => {
+  if (!bulkInvite.value.file) return;
+  
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    const invitations = await invitationService.sendBulkInvite(bulkInvite.value.file);
+    recentInvites.value.unshift(...invitations);
+    bulkInvite.value = {
+      file: null,
+      fileName: ''
+    };
+    const fileInput = document.getElementById('csvFileInput') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to send bulk invitations';
+    console.error(err);
+  } finally {
+    loading.value = false;
   }
 };
 
-const resendInvite = (invite: Invite) => {
-  // TODO: Implement API call to resend invitation
-  console.log('Resending invite:', invite);
+const resendInvite = async (invite: Invitation) => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    const updatedInvitation = await invitationService.resendInvitation(invite.id);
+    const index = recentInvites.value.findIndex(i => i.id === invite.id);
+    if (index !== -1) {
+      recentInvites.value[index] = updatedInvitation;
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to resend invitation';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
 };
 
-const cancelInvite = (invite: Invite) => {
-  // TODO: Implement API call to cancel invitation
-  console.log('Canceling invite:', invite);
-  invite.status = 'cancelled';
+const cancelInvite = async (invite: Invitation) => {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    await invitationService.cancelInvitation(invite.id);
+    const index = recentInvites.value.findIndex(i => i.id === invite.id);
+    if (index !== -1) {
+      recentInvites.value[index] = { ...invite, status: 'CANCELLED' };
+    }
+  } catch (err: any) {
+    error.value = err.response?.data?.error || 'Failed to cancel invitation';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
 };
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString();
 };
 
-const getStatusClass = (status: Invite['status']) => {
+const getStatusClass = (status: Invitation['status']) => {
   const classes = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    accepted: 'bg-green-100 text-green-800',
-    declined: 'bg-red-100 text-red-800',
-    cancelled: 'bg-gray-100 text-gray-800'
+    PENDING: 'bg-yellow-100 text-yellow-800',
+    ACCEPTED: 'bg-green-100 text-green-800',
+    DECLINED: 'bg-red-100 text-red-800',
+    CANCELLED: 'bg-gray-100 text-gray-800',
+    EXPIRED: 'bg-gray-100 text-gray-800'
   };
   return classes[status];
 };

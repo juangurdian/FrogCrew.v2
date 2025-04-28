@@ -168,7 +168,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { userService } from '@/services/api';
 
 interface CrewMember {
   id: number;
@@ -188,32 +189,32 @@ const positionFilter = ref('');
 const statusFilter = ref('');
 const editingMember = ref<CrewMember | null>(null);
 
-const crewMembers = ref<CrewMember[]>([
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    position: 'camera',
-    status: 'active',
-    joinDate: '2024-01-15'
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    position: 'audio',
-    status: 'on_leave',
-    joinDate: '2024-02-01'
-  },
-  {
-    id: 3,
-    name: 'Mike Johnson',
-    email: 'mike.johnson@example.com',
-    position: 'director',
-    status: 'active',
-    joinDate: '2024-01-20'
+const loading = ref(false);
+const error = ref('');
+
+const crewMembers = ref<CrewMember[]>([]);
+
+const fetchCrewMembers = async () => {
+  loading.value = true;
+  error.value = '';
+  try {
+    const response = await userService.getAllUsers();
+    crewMembers.value = response.data.map((user: any) => ({
+      id: user.id,
+      name: user.firstName + ' ' + user.lastName,
+      email: user.email,
+      position: user.position || '', // adjust if position is stored elsewhere
+      status: user.isActive ? 'active' : 'inactive',
+      joinDate: user.createdAt ? new Date(user.createdAt).toISOString().slice(0, 10) : ''
+    }));
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Failed to load crew members';
+  } finally {
+    loading.value = false;
   }
-]);
+};
+
+onMounted(fetchCrewMembers);
 
 const filteredCrew = computed(() => {
   return crewMembers.value.filter(member => {
@@ -257,21 +258,51 @@ const editMember = (member: CrewMember) => {
   editingMember.value = { ...member };
 };
 
-const saveMember = () => {
+const saveMember = async () => {
   if (!editingMember.value) return;
-  
-  const index = crewMembers.value.findIndex(m => m.id === editingMember.value?.id);
-  if (index !== -1) {
-    crewMembers.value[index] = { ...editingMember.value };
+  loading.value = true;
+  error.value = '';
+  try {
+    // Split name into firstName and lastName
+    const [firstName, ...lastNameArr] = editingMember.value.name.split(' ');
+    const lastName = lastNameArr.join(' ');
+    await userService.updateUser(editingMember.value.id, {
+      email: editingMember.value.email,
+      firstName,
+      lastName,
+      role: 'USER', // or use actual role if available
+      // Add position if backend supports it
+      // position: editingMember.value.position,
+      // Add status if backend supports it
+      // isActive: editingMember.value.status === 'active',
+    });
+    await fetchCrewMembers();
+    editingMember.value = null;
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Failed to update member';
+  } finally {
+    loading.value = false;
   }
-  editingMember.value = null;
 };
 
-const toggleStatus = (member: CrewMember) => {
-  const newStatus = member.status === 'active' ? 'inactive' : 'active';
-  const index = crewMembers.value.findIndex(m => m.id === member.id);
-  if (index !== -1) {
-    crewMembers.value[index].status = newStatus;
+const toggleStatus = async (member: CrewMember) => {
+  loading.value = true;
+  error.value = '';
+  try {
+    // Toggle isActive via updateUser
+    await userService.updateUser(member.id, {
+      // Keep other fields unchanged
+      email: member.email,
+      firstName: member.name.split(' ')[0],
+      lastName: member.name.split(' ').slice(1).join(' '),
+      role: 'USER',
+      // isActive: member.status !== 'active',
+    });
+    await fetchCrewMembers();
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Failed to update status';
+  } finally {
+    loading.value = false;
   }
 };
 </script> 
